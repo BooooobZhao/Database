@@ -1,0 +1,7 @@
+"0","CREATE TRIGGER module_log AFTER INSERT ON Module
+BEGIN
+  INSERT INTO
+    LogModule(MoLogTime, MoLogInfo)
+  VALUES
+    (datetime('now'), NEW.number || '-' || NEW.title);
+END;"

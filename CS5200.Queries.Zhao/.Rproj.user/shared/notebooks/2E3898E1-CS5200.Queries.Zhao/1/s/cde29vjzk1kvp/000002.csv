@@ -1,0 +1,5 @@
+"0","/* Q1: What are the last name, city, state, and country of all customers who made at least one purchase and live either in Brazil or Canada? Do not list duplicates. */
+
+SELECT DISTINCT LastName, City, State, Country FROM customers,invoices
+  WHERE customers.CustomerId = invoices.CustomerId AND customers.Country IN (""Brazil"", ""Canada"") 
+"

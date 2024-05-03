@@ -1,0 +1,24 @@
+"0","```r
+library(RSQLite)
+
+fpath = \"\"
+dbfile = \"MediaDB.db\"
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath,dbfile))
+
+sqlCmd = \"SELECT * FROM invoice_items\"
+
+rs = dbGetQuery(dbcon, sqlCmd)
+rs$ItemPrice <- rs$UnitPrice * rs$Quantity
+
+round(mean(rs$ItemPrice, trim = 0.1), 2)
+```"
+"1","[1] 0.99
+"
+"0","```r
+round
+```"
+"1","function (x, digits = 0)  .Primitive(\"round\")
+"
+"0","```r
+head(rs)
+```"

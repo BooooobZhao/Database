@@ -1,0 +1,260 @@
+### Assignment1: Build Hierarchical Document Database
+### Author: Yinan Hu
+### Course: CS 5200 Database Management Systems
+### Term: 2023 Spring
+### Date: Jan 19th 2023
+
+library(stringr)
+
+# Global variable that indicates the root folder's name
+rootDir <- "docDB"
+# Global variable that indicates the root folder's relative path with the work directory
+path <- ""
+
+configDB <- function(root, path) {
+  # Sets up all folders and database related structure
+  #
+  # Args:
+  #   root: the folder that stores all tag folders
+  #   path: the path of the root folder
+  rootPath <- file.path(getwd(), path, root)
+  tryCatch(
+    if (!dir.exists(rootPath)){
+      dir.create(rootPath)
+    },
+    error = function(e){
+      message("An error occured when creating the root folder in configDB:\n", e)
+      },
+    warning = function(w){
+      message("A warning when creating the root folder in configDB:\n", w)
+      }
+    )
+  # Overwrite the global variable, the path of the root folder from inside a function
+  path <<- path
+}
+
+genObjPath <- function(root, tag) {
+  # Generates the path of the tag folder
+  # 
+  # Args:
+  #   root: the parent folder of tag folder
+  #   tag: tag name
+  # 
+  # Returns:
+  #   The generated path to the tag folder
+  objPath <- file.path(root, sub(".*#", "", tag))
+  return (objPath)
+}
+
+getTags <- function(fileName) {
+  # Get all the tags in the file name
+  # 
+  # Args:
+  #   fileName: file name
+  #
+  # Returns:
+  #   A vector of tags in the file name
+  #
+  # Check if the file has tags
+  tags <- ""
+  if(!grepl("#", fileName, fixed = TRUE))
+    warning("The file doesn't have tags in file name")
+  else
+    # Seperate the file name by white space 
+    # Remove the first element which is the original file name and the left is the tags
+    # Remove the extension after the last tag
+    # Remove the redundant "#" but the first one  in the tags
+    tags <- paste0("#", sub(".*#", "", sub("\\..*", "", str_split_1(fileName, " ")[-1])))
+  return (tags)
+}
+
+getFileName <- function(fileName) {
+  # Get the original file name in the file name
+  # Assuming that the file name only contains one period
+  # Assuming that no periods in tags, no hash in the original file name
+  # 
+  # Args:
+  #   fileName: file name
+  #
+  # Returns:
+  #   A string of the file name
+  
+  if(!grepl(".", fileName, fixed = TRUE))
+    stop("The file doesn't have extension in file name")
+  extension <- sub(".*\\.", "", fileName)
+  fileName <- trimws(sub("#.*", "", fileName))
+  # Check if the file name contains a period, if so remove the extension
+  if(!grepl(".", fileName, fixed = TRUE)) {
+    fileName <- paste(fileName, extension, sep = ".") 
+  }
+  # print(paste("filename: ", fileName))
+  return (fileName)
+}
+
+storeObjs <- function(folder, root, verbose) {
+  # Copies all files in the specified folder to their correct folders 
+  # underneath the root folder as well as creates the tag folders
+  # 
+  # Args:
+  #   folder: the folder that stores all files
+  #   root: the folder that stores all the tag folders
+  #   verbose: a boolean variable to indicate if printing a message 
+  #            for every file that is copied
+  
+  # List all files in the resource folder
+  files <- list.files(path=folder, pattern=NULL, all.files=FALSE, 
+                      full.names=FALSE)
+  # Iterate every file to copy it to its tag folders
+  for (file in files) {
+    # A vector to store all the tags of the file
+    tags <- c()
+    # Iterate every tag of the file
+    for(tag in getTags(file)) {
+      tagPath <- file.path(getwd(), path, genObjPath(root, tag))
+      tryCatch(
+        if (!dir.exists(tagPath)){
+          dir.create(tagPath)
+        },
+        error = function(e){
+          message("An error occured when creating the tag folder in storeObjs:\n", e)
+        },
+        warning = function(w){
+          message("A warning when creating the tag folder in storeObjs:\n", w)
+        }
+      )
+      # Copy the file to the tag folder
+      tryCatch(
+        file.copy(file.path(folder, file), file.path(tagPath, getFileName(file))),
+        error = function(e){
+          message("An error occured when copying the file in storeObjs:\n", e)
+        },
+        warning = function(w){
+          message("A warning when copying the file in storeObjs:\n", w)
+        }
+      )
+      tags <- append(tags, sub(".*#", "", tag))
+    }
+    # Determine if printing a message for the file that is copied
+    if (verbose == TRUE) {
+      print(paste0("Copying ", getFileName(file), " to ", paste0(tags, collapse=", ")))
+    }
+  }
+}
+
+clearDB <- function(root) {
+  # Removes all folders and files in the folder specified by root 
+  # but not the folder for root itself
+  # 
+  # Args:
+  #   root: the folder
+  unlink(file.path(getwd(), path, root, "*"), recursive=TRUE)
+}
+
+testGenObjPath <- function() {
+  # Test the function genObjPath
+  print("The unit test of genObjPath: ")
+  print("Test1, expected result: ")
+  print("docDB/apple")
+  print("actual result: ")
+  print(genObjPath(rootDir, "#apple"))
+  # Corner case: one tag has many hashes
+  print("Test2, expected result: ")
+  print("docDB/fruit")
+  print("actual result: ")
+  print(genObjPath(rootDir, "###fruit"))
+}
+
+testGetTags <- function() {
+  # Test the function getTags
+  fileName1 = "GreenApple #Fruit #Apple.jpg"
+  fileName2 = "GreenApple.jpg #Fruit #Apple #Sweet"
+  fileName3 = "GreenApple.jpg"
+
+  print("7. The result of getTags: ")
+  print("Test1, expected result:")
+  print(c("#Fruit", "#Apple"))
+  print("actual result:")
+  print(getTags(fileName1))
+  print("Test2, expected result:")
+  print(c("#Fruit", "#Apple", "#Sweet"))
+  print("actual result:")
+  print(getTags(fileName2))
+  print("Test3, expected result:")
+  print("print warning")
+  print("actual result:")
+  print(getTags(fileName3))
+}
+
+testGetFileName <- function() {
+  # Test the function getFileName
+  fileName1 = "GreenApple #Fruit #Apple.jpg"
+  # Corner case: the extension is at the first of the file name
+  fileName2 = "GreenApple.jpg #Fruit #Apple #Sweet"
+  # Corner case: doesn't have extension in name
+  fileName3 = "#Fruit #Apple #Sweet.jpg"
+  # Corner case: thee original file name is null
+  fileName4 = "GreenApple #Fruit #Apple #Sweet"
+  
+  print("8. The result of getFileName: ")
+  print("Test1, expected result:")
+  print("GreenApple.jpg")
+  print("actual result:")
+  print(getFileName(fileName1))
+  print("Test2, expected result:")
+  print("GreenApple.jpg")
+  print("actual result:")
+  print(getFileName(fileName2))
+  print("Test3, expected result:")
+  print(".jpg")
+  print("actual result:")
+  print(getFileName(fileName3))
+  print("Test4, expected result:")
+  print("print error")
+  print("actual result:")
+  print(getFileName(fileName4))
+}
+
+main <- function() {
+  # The root folder's relative path with the work directory
+  path <- ""
+  # Set up all folders and database related structure
+  configDB(rootDir, path)
+  
+  print("==============================")
+  print("Work flow:")
+  # Generate the path to the tag folder
+  print("The result of genObjPath: ")
+  print(genObjPath(rootDir, "#ISEC"))
+  
+  # Get the vector of tags in the file name
+  fileName1 = "CampusAtNight ###Northeastern #ISEC.jpg"
+  fileName2 = "FrontDoorOfCSC.jpg #Northeastern #CSC #Dining"
+  print("The result of getTags: ")
+  print(getTags(fileName1))
+  print(getTags(fileName2))
+  
+  # Get the file name in the file name
+  print("The result of getFileName: ")
+  print(getFileName(fileName1))
+  print(getFileName(fileName2))
+  
+  # Copy all files in the specified in the folder argument 
+  # to their correct folders underneath the root folder
+  folder <- "images"
+  print("9 & 10. The result of storeObjs: ")
+  storeObjs(folder, rootDir, TRUE)
+  
+  # Remove all folders and files in the folder
+  clearDB(rootDir)
+  
+  # Unit tests
+  print("==============================")
+  print("Unit tests:")
+  testGenObjPath()
+  testGetTags()
+  testGetFileName()
+  
+  # quit()
+}
+
+main()

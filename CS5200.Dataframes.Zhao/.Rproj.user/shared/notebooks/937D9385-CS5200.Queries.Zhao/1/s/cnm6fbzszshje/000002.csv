@@ -1,0 +1,7 @@
+"0","```sql
+/* Q2: What are the titles of each album and the number of tracks on each album? */
+
+SELECT Title, COUNT(tracks.trackId) AS trackNumber
+  FROM albums JOIN tracks USING (AlbumId)
+  GROUP BY albums.Title
+```"

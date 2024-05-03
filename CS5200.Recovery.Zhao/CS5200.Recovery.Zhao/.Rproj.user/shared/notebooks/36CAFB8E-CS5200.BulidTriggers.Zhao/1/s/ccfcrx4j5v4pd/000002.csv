@@ -1,0 +1,8 @@
+"0","```sql
+CREATE TABLE if not EXISTS LogAuMo(
+  AuMoLogId INTEGER NOT NULL,
+  AuMoLogTime Text NOT NULL,
+  AuMoLogInfo Text,
+  PRIMARY KEY(AuMoLogId)
+)
+```"

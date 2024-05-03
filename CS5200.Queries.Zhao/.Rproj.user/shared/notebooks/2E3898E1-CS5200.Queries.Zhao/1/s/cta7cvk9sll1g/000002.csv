@@ -1,0 +1,5 @@
+"0","/* Q7: How many albums contain the substring ""symphony"" in the album title? */
+
+SELECT COUNT(Title) AS SymphonyNumber
+  FROM albums
+  WHERE Title LIKE '%symphony%'"

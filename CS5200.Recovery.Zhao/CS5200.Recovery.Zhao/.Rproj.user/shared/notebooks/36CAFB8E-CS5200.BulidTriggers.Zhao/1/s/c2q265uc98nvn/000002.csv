@@ -1,0 +1,5 @@
+"0","```sql
+INSERT INTO Author VALUES
+  (7, \"James\", \"James@mail.com\", \"PT\"),
+  (8, \"Ellie\", \"Elove@mail.com\", \"FT\")
+```"

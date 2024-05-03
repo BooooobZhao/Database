@@ -1,0 +1,6 @@
+"0","```sql
+INSERT INTO Affiliation VALUES 
+  (\"PT\"),
+  (\"FT\"),
+  (\"Contract\")
+```"

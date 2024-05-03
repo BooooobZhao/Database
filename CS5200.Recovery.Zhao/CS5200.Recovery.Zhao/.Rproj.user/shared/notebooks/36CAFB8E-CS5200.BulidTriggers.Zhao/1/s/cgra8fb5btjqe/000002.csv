@@ -1,0 +1,7 @@
+"0","```sql
+CREATE TRIGGER delete_cascade_module AFTER DELETE ON Module
+BEGIN
+  DELETE FROM AuthorModule
+  WHERE OLD.number = AuthorModule.amnumber;
+END;
+```"

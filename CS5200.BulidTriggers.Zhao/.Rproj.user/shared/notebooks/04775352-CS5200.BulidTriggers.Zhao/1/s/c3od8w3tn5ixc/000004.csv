@@ -1,0 +1,5 @@
+"0","CREATE TRIGGER delete_cascade_author AFTER DELETE ON Author
+BEGIN
+  DELETE FROM AuthorModule
+  WHERE OLD.aid = AuthorModule.amaid;
+END;"

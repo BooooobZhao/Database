@@ -1,0 +1,226 @@
+> Build Triggers\
+> Author: Wang, Yinan\
+> Course: CS5200\
+> Term: 2022Fall
+
+## Environment Setup
+
+```{r}
+library(RSQLite)
+fpath = "./" #local folder
+dbfile = "5200CRDB.sqlite"
+
+# if database file already exists, connect to it
+# otherwise create a new database
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath,dbfile))
+# enable foreign keys constraint
+dbExecute(dbcon, "PRAGMA foreign_keys = ON")
+```
+
+## Drop Tables if Exists
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Lecture;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Module;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Author;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS Affiliation;
+```
+
+## Create Tables
+
+```{sql connection=dbcon}
+CREATE TABLE Module(
+  mnumber     TEXT NOT NULL, -- module number
+  title       TEXT NOT NULL, -- module title
+  lengthInMin Number NOT NULL, -- module length
+  
+  PRIMARY KEY (mnumber) -- set primary key
+);
+```
+
+```{sql connection=dbcon}
+CREATE TABLE Author(
+  aid         Number NOT NULL, -- author id
+  name        TEXT NOT NULL, -- author name
+  email       TEXT NOT NULL, -- author email
+  affiliation TEXT NOT NULL, -- author affiliation belongs to {"PT", "FT", "Contract"}
+  
+  PRIMARY KEY (aid) -- set primary key
+  -- add affiliation constraint
+  --- CONSTRAINT acheck CHECK (affiliation IN ("PT", "FT", "Contract")) 
+  FOREIGN KEY (affiliation) REFERENCES Affiliation(afid)
+);
+```
+
+```{sql connection=dbcon}
+CREATE TABLE Affiliation(
+  afid INTEGER PRIMARY KEY AUTOINCREMENT,
+  affiliation TEXT NOT NULL
+);
+
+```
+
+```{sql connection=dbcon}
+CREATE TABLE Lecture(
+  mnumber TEXT NOT NULL,
+  aid     Number NOT NULL,
+
+  CONSTRAINT joint_pk PRIMARY KEY (mnumber, aid) -- set composite key as primark key
+  FOREIGN KEY (mnumber) REFERENCES Module(mnumber)
+  FOREIGN KEY (aid) REFERENCES Author(aid)
+);
+```
+
+## Create trigger to track modules' creation
+
+Create a audio table
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS TraceModule
+```
+
+```{sql connection=dbcon}
+CREATE TABLE TraceModule(
+  traceId integer primary key,
+  createTime timestamp text, 
+  moduleTitle title);
+```
+
+Create the trigger
+
+```{sql connection=dbcon}
+DROP TRIGGER IF EXISTS createModule;
+```
+
+After a new module get added, insert a new element in TrackModule table with moduleid, create timestamp and module title info.
+
+```{sql connection=dbcon}
+CREATE TRIGGER createModule AFTER INSERT ON Module
+  BEGIN
+    INSERT INTO
+      TraceModule(createTime, moduleTitle)
+    VALUES
+      (datetime(), new.mnumber || '-' || new.title);
+  END;
+```
+
+### Test
+
+```{sql connection=dbcon}
+INSERT INTO Module(mnumber, title, lengthInMin) VALUES 
+(5100, "IntroToAI", 120);
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Module WHERE title = "IntroToAI";
+```
+
+```{sql connection=dbcon}
+SELECT * FROM TraceModule;
+```
+
+## Create trigger to validate affiliation
+
+```{sql connection=dbcon}
+DROP TRIGGER IF EXISTS validateAffiliation;
+```
+
+Before a new author get added, validate the affiliation
+
+```{sql connection=dbcon}
+CREATE TRIGGER validateAffiliation BEFORE INSERT ON Author
+  BEGIN
+    SELECT
+      CASE
+        WHEN new.affiliation NOT IN 
+          (SELECT afid FROM affiliation) 
+        THEN 
+          RAISE (ABORT, 'Invalid Affiliation, please double check')
+      END;
+  END;
+```
+
+### Test
+
+```{sql connection=dbcon}
+INSERT INTO Affiliation(affiliation) VALUES
+("PT"),
+("FT");
+```
+
+```{sql connection=dbcon}
+SELECT * FROM affiliation;
+```
+
+should throw Error: Invalid Affiliation, please double check
+
+```{sql connection=dbcon}
+INSERT INTO Author VALUES
+  (1, 'Test', "test@neu.edu", 4)
+```
+
+
+## Create trigger to avoid duplicate affiliation
+
+```{sql connection=dbcon}
+DROP TRIGGER IF EXISTS avoidDupAff;
+```
+
+Before a new affiliation get added, validate the affiliation
+
+```{sql connection=dbcon}
+CREATE TRIGGER avoidDupAff BEFORE INSERT ON Affiliation
+  BEGIN
+    SELECT
+      CASE
+        WHEN new.affiliation IN (SELECT affiliation FROM Affiliation)
+        THEN RAISE (ABORT, 'Duplicate Affiliation, please double check')
+      END;
+  END;
+```
+
+### Test
+should throw Error: Duplicate Affiliation, please double check
+```{sql connection=dbcon}
+INSERT INTO Affiliation(affiliation) VALUES
+("PT");
+```
+## Create trigger to validate email format
+
+```{sql connection=dbcon}
+DROP TRIGGER IF EXISTS validateEmail;
+```
+
+Before a new author get added, validate the email
+
+```{sql connection=dbcon}
+CREATE TRIGGER validateEmail BEFORE INSERT ON Author
+  BEGIN
+    SELECT
+      CASE
+        WHEN new.email NOT LIKE '%_@%_.__%'
+        THEN RAISE (ABORT, 'Invalid Email, please double check')
+      END;
+  END;
+```
+
+### Test
+should throw Error: Invalid Email, please double check
+```{sql connection=dbcon}
+INSERT INTO Author(aid, name, email, affiliation) VALUES
+(2,"Test","Test", 2);
+```
+## disconnect database
+
+```{r}
+dbDisconnect(dbcon)
+```

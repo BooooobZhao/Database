@@ -1,0 +1,5 @@
+"0","INSERT INTO Module VALUES
+  (""0001"", ""moudle A"", 10),
+  (""0002"", ""moudle B"", 30),
+  (""0003"", ""moudle C"", 20),
+  (""0004"", ""moudle D"", 10)"

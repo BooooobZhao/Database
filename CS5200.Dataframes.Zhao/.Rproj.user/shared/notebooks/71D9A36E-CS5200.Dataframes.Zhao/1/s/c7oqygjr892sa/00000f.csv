@@ -1,0 +1,3 @@
+"0","query <- ""SELECT * FROM invoices;"""
+"0","res <- dbGetQuery(dbcon, query)"
+"0","res"

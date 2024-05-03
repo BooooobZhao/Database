@@ -1,0 +1,113 @@
+---
+title: "Implement a Relational Database"
+output: html_notebook
+---
+
+```{r}
+library(RSQLite)
+
+fpath = ""
+dbfile = "committeeDB.sqlite"
+
+# if database file already exists, we connect to it, otherwise
+# we create a new database
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath,dbfile))
+
+dbExecute(dbcon, "PRAGMA foreign_keys = ON")
+```
+## Create Module Table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS Module(
+  number Text NOT NULL,
+  tittle Text NOT NULL,
+  lengthMin INTEGER NOT NULL,
+  PRIMARY KEY (number)
+)
+```
+
+## Insert into Module Table
+```{sql connection=dbcon}
+INSERT INTO Module VALUES
+  ("0001", "moudle A", 10),
+  ("0002", "moudle B", 30),
+  ("0003", "moudle C", 20),
+  ("0004", "moudle D", 10)
+```
+
+## Create Affiliation categories
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS Affiliation(
+  aName Text NOT NULL,
+  PRIMARY KEY (aName)
+)
+```
+
+## Insert into Affiliation
+```{sql connection=dbcon}
+INSERT INTO Affiliation VALUES 
+  ("PT"),
+  ("FT"),
+  ("Contract")
+```
+
+## Create Author Table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS Author(
+  aid INTEGER NOT NULL,
+  name Text NOT NULL,
+  email Text NOT NULL,
+  affiliation Text NOT NULL,
+  FOREIGN KEY (affiliation) REFERENCES Affiliation (aName),
+  PRIMARY KEY (aid)
+)
+```
+
+## Insert into Author Table
+```{sql connection=dbcon}
+INSERT INTO Author VALUES
+  (1, "Bob", "bob@mail.com", "PT"),
+  (2, "Lili", "wow@1234.com", "FT"),
+  (3, "Galen", "galen@game.com", "Contract")
+
+```
+
+## Create AuthorModule Table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS AuthorModule(
+  amaid INTEGER NOT NULL,
+  amnumber Text NOT NULL,
+  FOREIGN KEY (amaid) REFERENCES Author (aid),
+  FOREIGN KEY (amnumber) REFERENCES Module (number),
+  PRIMARY KEY (amaid, amnumber)
+)
+```
+
+## Insert into AuthorModule Table
+```{sql connection=dbcon}
+INSERT INTO AuthorModule VALUES
+  (1, "0001"),
+  (2, "0002"),
+  (2, "0003"),
+  (1, "0004")
+```
+
+## Module Table
+```{sql connection=dbcon}
+SELECT * FROM Module
+```
+
+## Author Table
+```{sql connection=dbcon}
+SELECT * FROM Author
+```
+
+## AuthorMoudle Tbale
+```{sql connection=dbcon}
+SELECT * FROM AuthorModule
+```
+
+```{r}
+dbDisconnect(dbcon)
+```
+
+

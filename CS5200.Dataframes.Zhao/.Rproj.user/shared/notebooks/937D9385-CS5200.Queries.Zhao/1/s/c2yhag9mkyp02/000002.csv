@@ -1,0 +1,6 @@
+"0","```sql
+/* Q4: What is the average \"tenure\" of the employees in months? */
+
+SELECT ROUND(AVG(cast((strftime('%Y', 'now') - strftime('%Y', e.HireDate)) * 12 + (strftime('%m', 'now') - strftime('%m', e.HireDate)) AS float)), 0) AS avgAge
+  FROM employees e
+```"

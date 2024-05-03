@@ -1,0 +1,12 @@
+"0","```r
+library(sqldf)
+```"
+"1","载入需要的程辑包：gsubfn
+载入需要的程辑包：proto
+"
+"0","```r
+rs2 <- sqldf(\"SELECT InvoiceId, SUM(ItemPrice) AS totalPrice, SUM(Quantity) AS itemNumber 
+                FROM rs 
+                GROUP BY InvoiceId;\")
+rs2
+```"

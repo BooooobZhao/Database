@@ -1,0 +1,7 @@
+"0","CREATE TRIGGER author_log AFTER INSERT ON Author
+BEGIN
+  INSERT INTO
+    LogAuthor(AuLogTime, AuLogInfo)
+  VALUES
+    (datetime('now'), NEW.aid || '-' || NEW.name);
+END;"

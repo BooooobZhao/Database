@@ -1,0 +1,7 @@
+"0","CREATE TRIGGER authormodule_log AFTER INSERT ON AuthorModule
+BEGIN
+  INSERT INTO
+    LogAuMo(AuMoLogTime, AuMoLogInfo)
+  VALUES
+    (datetime('now'), NEW.amaid || '-' || NEW.amnumber);
+END;"

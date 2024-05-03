@@ -1,0 +1,9 @@
+"0","```r
+library(ggplot2)
+
+ggplot(data = rs2, aes(x = itemNumber, y = totalPrice)) + 
+   stat_summary(geom = \"line\", fun.y = mean) + xlab(\"item number\") + ylab(\"average price\")
+```"
+"1","Warning: The `fun.y` argument of `stat_summary()` is deprecated as of ggplot2 3.3.0.
+Please use the `fun` argument instead.
+"

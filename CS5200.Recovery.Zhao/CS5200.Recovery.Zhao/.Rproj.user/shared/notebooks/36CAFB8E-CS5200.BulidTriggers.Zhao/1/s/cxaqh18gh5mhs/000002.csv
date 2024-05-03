@@ -1,0 +1,5 @@
+"0","```sql
+INSERT INTO Module VALUES
+  (\"0005\", \"moudle A plus\", 100),
+  (\"0006\", \"moudle B plus\", 200)
+```"

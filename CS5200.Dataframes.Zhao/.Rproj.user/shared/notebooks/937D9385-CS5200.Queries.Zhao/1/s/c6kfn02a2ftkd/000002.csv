@@ -1,0 +1,8 @@
+"0","```sql
+/* Q5: What are the total number of unique customers for each Brazilian state, ordered alphabetically by state, who made at least one purchase (i.e., do not consider customers who never made a purchase)? */
+
+SELECT c.state, COUNT(DISTINCT c.CustomerId) AS totalNumber
+  FROM customers c JOIN invoices USING (CustomerId)
+  WHERE c.country = \"Brazil\"
+  GROUP BY c.state
+```"

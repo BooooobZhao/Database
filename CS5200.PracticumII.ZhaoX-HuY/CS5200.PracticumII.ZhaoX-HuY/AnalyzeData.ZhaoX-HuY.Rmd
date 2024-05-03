@@ -1,0 +1,109 @@
+---
+title: "AnalyzeData"
+output: html_notebook
+author: Xuebao Zhao(002108354), Yinan Hu(002108083)
+date: Apr 15 2023
+---
+# Connect to mysql
+```{r}
+library(RMySQL)
+library(RSQLite)
+library(dplyr)
+
+# Create a local MySQL database and connect to it
+db_user <- '5200'
+
+# delare proper credentials
+db_password <- 'password'
+db_name <- '5200_P1'
+
+db_host <- 'localhost'
+db_port <- 3306
+
+dbcon <-  dbConnect(MySQL(), user = db_user, password = db_password,
+                    dbname = db_name, host = db_host, port = db_port)
+```
+# Query I
+## Analytical Query I: Top five journals with the most articles published in them for the time period. Think about how you would best present this information so it is easily usable by an analyst or manager.
+```{r}
+# Set the time period for the query
+start_year <- 1975
+end_year <- 1978
+
+# Query the top five journals with the most articles published in the specified time period
+sql <- sprintf("
+SELECT jf.issn, SUM(jf.numOfArticle) as total_numOfArticle
+FROM JournalFact jf
+JOIN TimeDimension td ON jf.tid = td.tid
+WHERE td.year BETWEEN %d AND %d AND td.month = 13
+GROUP BY jf.issn
+ORDER BY total_numOfArticle DESC
+LIMIT 5;
+", start_year, end_year)
+
+# Retrieve the results from the database and store them in a data.frame
+top_journals <- dbGetQuery(dbcon, sql)
+
+# Print the results
+print(top_journals)
+
+```
+Our fact table, "JournalFact" contains an attribute, "numOfArticle" which stores the number of articles published during a specific period. We achieved the query by this attribute.
+
+sample writing: The most article appeared in the journal with issn of "0022-3573" during the year of 1975 to 1978.The top five journals with the most articles published are shwon above. 
+
+This table clearly shows the rank, ISSN, and the total number of articles published for each journal within the specified time period, making it easily usable by an analyst or manager.
+
+Another method to present the top five journals with the most articles published in them for the time period is to use a bar chart. A bar chart is a graphical representation that displays the data using rectangular bars, making it easy to compare the number of articles published across different journals.
+# Query II
+## Analytical Query II: Number of articles per journal per year broken down by quarter. Again, think of a good way to show this. Is a table better than a visualization or is it better to use a visualization.
+
+```{r}
+# Query the number of articles per journal per year broken down by quarter
+sql <- "
+SELECT jf.issn, td.year, t_quarter.month as quarter, SUM(jf.numOfArticle) as numOfArticles
+FROM JournalFact jf
+JOIN TimeDimension td ON jf.tid = td.tid
+JOIN TimeDimension t_quarter ON td.year = t_quarter.year AND (
+    (t_quarter.month = 14 AND td.month BETWEEN 1 AND 3) OR
+    (t_quarter.month = 15 AND td.month BETWEEN 4 AND 6) OR
+    (t_quarter.month = 16 AND td.month BETWEEN 7 AND 9) OR
+    (t_quarter.month = 17 AND td.month BETWEEN 10 AND 12)
+)
+GROUP BY jf.issn, td.year, t_quarter.month
+ORDER BY jf.issn, td.year, t_quarter.month;
+"
+
+# Retrieve the results from the database and store them in a data.frame
+quarterly_data <- dbGetQuery(dbcon, sql)
+
+n <- nrow(quarterly_data)
+for (i in 1:n) {
+  if (quarterly_data$quarter[i] == 14)
+    quarterly_data$quarter[i] <- "Q1"
+  else if (quarterly_data$quarter[i] == 15)
+    quarterly_data$quarter[i] <- "Q2"
+  else if (quarterly_data$quarter[i] == 16)
+    quarterly_data$quarter[i] <- "Q3"
+  else if (quarterly_data$quarter[i] == 17)
+    quarterly_data$quarter[i] <- "Q4"
+}
+# Print the results
+print(quarterly_data)
+
+```
+
+This SQL query retrieves the number of articles per journal per year, broken down by quarter, by joining the "JournalFact" and "TimeDimension" tables. It calculates the sum of articles for each ISSN, year, and quarter combination, then sorts the results by ISSN, year, and quarter for a meaningful output. By the way, in the table, issn of "0000-0000" means the missing ISSN records that are recorded.
+
+sample writing: The journal with issn of "0001-2092" has 2 articles published during the first quarter in 1977. The journal with issn of "0001-2092" has 4 articles published in total during the first, second and third quarters in 1977.
+
+One way to effectively present this information is to use a combination of a table and a visualization. The table offers a detailed view of the data, while the visualization allows for easier comparison across different journals, years, and quarters.
+
+Except the table, we can use a stacked bar chart visualization to represent the same data,with the following layout:
+The x-axis represents the years. The y-axis represents the total number of articles. Each bar represents a year and is divided into segments corresponding to the ISSN of each journal. The height of each segment represents the number of articles published in that journal within the year. Different colors are used to distinguish between quarters within each segment.
+
+This combination of a table and visualization allows an analyst or manager to quickly see trends and compare the number of articles published across different journals, years, and quarters, while still providing access to the detailed data if needed.
+# Disconnect to mysql
+```{r}
+dbDisconnect(dbcon)
+```

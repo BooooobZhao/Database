@@ -1,0 +1,3 @@
+"0","```sql
+DELETE FROM Author WHERE aid = 7
+```"

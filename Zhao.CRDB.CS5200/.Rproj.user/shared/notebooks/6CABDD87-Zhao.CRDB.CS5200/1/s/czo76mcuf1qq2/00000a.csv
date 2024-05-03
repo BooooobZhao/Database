@@ -1,0 +1,6 @@
+"0","CREATE TABLE if not EXISTS Module(
+  number Text NOT NULL,
+  tittle Text NOT NULL,
+  lengthMin INTEGER NOT NULL,
+  PRIMARY KEY (number)
+)"

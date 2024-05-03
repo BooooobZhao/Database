@@ -1,0 +1,9 @@
+"0","CREATE TRIGGER validate_email_before_insert_and_update
+   BEFORE INSERT ON Author
+BEGIN
+   SELECT
+      CASE
+	      WHEN NEW.email NOT LIKE '%_@__%.__%' THEN
+   	      RAISE (ABORT,'Invalid email address')
+      END;
+END;"

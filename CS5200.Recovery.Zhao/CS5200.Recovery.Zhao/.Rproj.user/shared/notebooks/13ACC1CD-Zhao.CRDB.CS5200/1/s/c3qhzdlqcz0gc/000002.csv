@@ -1,0 +1,9 @@
+"0","```sql
+CREATE TABLE if not EXISTS AuthorModule(
+  amaid INTEGER NOT NULL,
+  amnumber Text NOT NULL,
+  FOREIGN KEY (amaid) REFERENCES Author (aid),
+  FOREIGN KEY (amnumber) REFERENCES Module (number),
+  PRIMARY KEY (amaid, amnumber)
+)
+```"

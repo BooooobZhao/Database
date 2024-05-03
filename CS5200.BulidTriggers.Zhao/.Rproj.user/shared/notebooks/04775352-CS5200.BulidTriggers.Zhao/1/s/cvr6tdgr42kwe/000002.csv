@@ -1,0 +1,6 @@
+"0","CREATE TABLE if not EXISTS LogAuthor(
+  AuLogId INTEGER NOT NULL,
+  AuLogTime Text NOT NULL,
+  AuLogInfo Text,
+  PRIMARY KEY(AuLogId)
+)"

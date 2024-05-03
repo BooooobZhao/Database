@@ -1,0 +1,321 @@
+---
+title: "Implement a Relational Database and build triggers"
+output: html_notebook
+---
+
+# <span style="color: blue;">1. Implement a Relational Database</span>
+```{r}
+library(RSQLite)
+
+fpath = ""
+dbfile = "committeeDB.sqlite"
+
+# if database file already exists, we connect to it, otherwise
+# we create a new database
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath,dbfile))
+
+dbExecute(dbcon, "PRAGMA foreign_keys = ON")
+```
+## Create Module Table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS Module(
+  number Text NOT NULL,
+  title Text NOT NULL,
+  lengthMin INTEGER NOT NULL,
+  PRIMARY KEY (number)
+)
+```
+
+## Create Affiliation categories
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS Affiliation(
+  aName Text NOT NULL,
+  PRIMARY KEY (aName)
+)
+```
+
+## Create Author Table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS Author(
+  aid INTEGER NOT NULL,
+  name Text NOT NULL,
+  email Text NOT NULL,
+  affiliation Text NOT NULL,
+  FOREIGN KEY (affiliation) REFERENCES Affiliation (aName),
+  PRIMARY KEY (aid)
+)
+```
+
+## Create AuthorModule Table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS AuthorModule(
+  amaid INTEGER NOT NULL,
+  amnumber Text NOT NULL,
+  FOREIGN KEY (amaid) REFERENCES Author (aid),
+  FOREIGN KEY (amnumber) REFERENCES Module (number),
+  PRIMARY KEY (amaid, amnumber)
+)
+```
+
+## Insert into Affiliation
+```{sql connection=dbcon}
+INSERT INTO Affiliation VALUES 
+  ("PT"),
+  ("FT"),
+  ("Contract")
+```
+
+## Insert into Author Table
+```{sql connection=dbcon}
+INSERT INTO Author VALUES
+  (1, "Bob", "bob@mail.com", "PT"),
+  (2, "Lili", "wow@1234.com", "FT"),
+  (3, "Galen", "galen@game.com", "Contract"),
+  (4, "Alex", "alex@toto.com", "Contract"),
+  (5, "Sara", "itismadeup@md.com", "PT"),
+  (6, "Ted", "TED@yahoo.com", "FT")
+```
+
+## Insert into Module Table
+```{sql connection=dbcon}
+INSERT INTO Module VALUES
+  ("0001", "moudle A", 10),
+  ("0002", "moudle B", 30),
+  ("0003", "moudle C", 20),
+  ("0004", "moudle D", 10)
+```
+
+## Insert into AuthorModule Table
+```{sql connection=dbcon}
+INSERT INTO AuthorModule VALUES
+  (1, "0001"),
+  (2, "0001"),
+  (3, "0001"),
+  (4, "0001"),
+  (5, "0001"),
+  (2, "0002"),
+  (2, "0003"),
+  (1, "0004")
+```
+
+## Module Table
+```{sql connection=dbcon}
+SELECT * FROM Module
+```
+
+## Author Table
+```{sql connection=dbcon}
+SELECT * FROM Author
+```
+
+## AuthorMoudle Tbale
+```{sql connection=dbcon}
+SELECT * FROM AuthorModule
+```
+
+# <span style="color: blue;">2. Build Triggers</span>
+## Trigger1: Enforce some upper bound on the number of authors for modules
+Because a module will have at least one or more authors, but it is impossible to have unlimited authors. Here limit a module to have no more than 5 authors.
+```{sql connection=dbcon}
+CREATE TRIGGER upper_bound_number_of_authors
+  BEFORE INSERT ON AuthorModule
+BEGIN
+  SELECT
+    CASE
+      WHEN (SELECT COUNT(*) FROM AuthorModule WHERE amnumber = NEW.amnumber) >= 5 THEN
+        RAISE(ABORT, 'Cannot insert: A module can only have a maximum of five authors')
+    END;
+END;
+```
+
+### Test for trigger1
+```{sql connection=dbcon}
+SELECT * FROM AuthorModule
+```
+
+Because there are already five authors in the module numbered '0001', according to trigger1, you cannot continue to add authors to it.
+```{sql connection=dbcon}
+INSERT INTO AuthorModule VALUES
+  (6, "0001")
+```
+
+## Trigger2: Validate the email address before inserting
+We always expect the author's email to be valid, so we check that the author's email is in the correct format before inserting and updating. It should be in the format of xxxx@xxx.xxx. If not, we stop the insert and update and print a message.
+```{sql connection=dbcon}
+CREATE TRIGGER validate_email_before_insert_and_update
+   BEFORE INSERT ON Author
+BEGIN
+   SELECT
+      CASE
+	      WHEN NEW.email NOT LIKE '%_@__%.__%' THEN
+   	      RAISE (ABORT,'Invalid email address')
+      END;
+END;
+```
+
+### Test for trigger2
+Here we are inserting an email address with an invalid format, so the insert will not succeed.
+```{sql connection=dbcon}
+INSERT INTO Author VALUES
+  (7, "Xuebao", "xuebao@asdbi", "FT")
+```
+
+## Trigger3: Creat a log table to record insert on the Module table
+We always want to have a log table so that we can check when the record is generated. The Trigger3, Trigger4 and Trigger5 will record the time and information of the piece of inserted data whenever a piece of data is inserted.
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS LogModule(
+  MoLogId INTEGER NOT NULL,
+  MoLogTime Text NOT NULL,
+  MoLogInfo Text,
+  PRIMARY KEY(MoLogId)
+)
+```
+
+```{sql connection=dbcon}
+CREATE TRIGGER module_log AFTER INSERT ON Module
+BEGIN
+  INSERT INTO
+    LogModule(MoLogTime, MoLogInfo)
+  VALUES
+    (datetime('now'), NEW.number || '-' || NEW.title);
+END;
+```
+
+### Test for trigger3
+```{sql connection=dbcon}
+INSERT INTO Module VALUES
+  ("0005", "moudle A plus", 100),
+  ("0006", "moudle B plus", 200)
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Module
+```
+
+It can seen that the timestamp of the inserted data, id and title are recorded in the table
+```{sql connection=dbcon}
+SELECT * FROM LogModule
+```
+
+## Trigger4: Creat a log table to record insert on the Author table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS LogAuthor(
+  AuLogId INTEGER NOT NULL,
+  AuLogTime Text NOT NULL,
+  AuLogInfo Text,
+  PRIMARY KEY(AuLogId)
+)
+```
+
+```{sql connection=dbcon}
+CREATE TRIGGER author_log AFTER INSERT ON Author
+BEGIN
+  INSERT INTO
+    LogAuthor(AuLogTime, AuLogInfo)
+  VALUES
+    (datetime('now'), NEW.aid || '-' || NEW.name);
+END;
+```
+
+### Test for trigger4
+```{sql connection=dbcon}
+INSERT INTO Author VALUES
+  (7, "James", "James@mail.com", "PT"),
+  (8, "Ellie", "Elove@mail.com", "FT")
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Author
+```
+
+It can seen that the timestamp of the inserted data, id and name are recorded in the table
+```{sql connection=dbcon}
+SELECT * FROM LogAuthor
+```
+
+## Trigger5: Creat a log table to record insert on the AuthorModule table
+```{sql connection=dbcon}
+CREATE TABLE if not EXISTS LogAuMo(
+  AuMoLogId INTEGER NOT NULL,
+  AuMoLogTime Text NOT NULL,
+  AuMoLogInfo Text,
+  PRIMARY KEY(AuMoLogId)
+)
+```
+
+```{sql connection=dbcon}
+CREATE TRIGGER authormodule_log AFTER INSERT ON AuthorModule
+BEGIN
+  INSERT INTO
+    LogAuMo(AuMoLogTime, AuMoLogInfo)
+  VALUES
+    (datetime('now'), NEW.amaid || '-' || NEW.amnumber);
+END;
+```
+
+### Test for trigger5
+```{sql connection=dbcon}
+INSERT INTO AuthorModule VALUES
+  (7, "0006"),
+  (8, "0005")
+```
+
+```{sql connection=dbcon}
+SELECT * FROM AuthorModule
+```
+
+It can seen that the timestamp of the inserted data, id and name are recorded in the table
+```{sql connection=dbcon}
+SELECT * FROM LogAuMo
+```
+
+## Trigger6: Implement delete cascade on Author table
+When there is an attribute in a table as a foreign key of another table, deleting a piece of data in the table will cause an error. Here we hope to be able to delete, and when one piece of data is deleted, cascade delete data associated with it from another table. After all, if there is no such author, the id of this author cannot exist in the relationship table. Trigger7 works the same.
+```{sql connection=dbcon}
+CREATE TRIGGER delete_cascade_author AFTER DELETE ON Author
+BEGIN
+  DELETE FROM AuthorModule
+  WHERE OLD.aid = AuthorModule.amaid;
+END;
+```
+
+### Test for trigger6
+```{sql connection=dbcon}
+DELETE FROM Author WHERE aid = 7
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Author
+```
+
+The data with aid = 7 is also deleted in AuthorModule Table.
+```{sql connection=dbcon}
+SELECT * FROM AuthorModule
+```
+
+## Trigger7: Implement delete cascade on Module table
+```{sql connection=dbcon}
+CREATE TRIGGER delete_cascade_module AFTER DELETE ON Module
+BEGIN
+  DELETE FROM AuthorModule
+  WHERE OLD.number = AuthorModule.amnumber;
+END;
+```
+
+### Test for trigger7
+```{sql connection=dbcon}
+DELETE FROM Module WHERE number = '0005'
+```
+
+```{sql connection=dbcon}
+SELECT * FROM Module
+```
+
+The data with number = '0005' is also deleted in AuthorModule Table.
+```{sql connection=dbcon}
+SELECT * FROM AuthorModule
+```
+
+```{r}
+dbDisconnect(dbcon)
+```

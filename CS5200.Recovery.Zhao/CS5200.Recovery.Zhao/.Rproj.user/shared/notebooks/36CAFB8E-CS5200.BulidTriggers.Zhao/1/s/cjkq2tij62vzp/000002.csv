@@ -1,0 +1,5 @@
+"0","```sql
+INSERT INTO AuthorModule VALUES
+  (7, \"0006\"),
+  (8, \"0005\")
+```"

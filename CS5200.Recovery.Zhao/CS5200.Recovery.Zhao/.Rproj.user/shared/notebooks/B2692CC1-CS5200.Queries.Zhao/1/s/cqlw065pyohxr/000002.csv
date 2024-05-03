@@ -1,0 +1,9 @@
+"0","```sql
+/* Q8: What is the total \"time\" of all tracks per artist in hours, i.e., add up the \"Milliseconds\" column in tracks? Display the artist's name and the time in hours rounded to two decimals. Only consider artists who published at least one track. */
+
+SELECT artists.Name AS Name, ROUND((SUM(tracks.milliseconds)/3600000.00), 2) AS totalHours 
+  FROM albums
+    JOIN artists USING (ArtistId)
+    JOIN tracks USING (AlbumId)
+  GROUP BY artists.Name
+```"

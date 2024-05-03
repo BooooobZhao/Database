@@ -1,0 +1,25 @@
+"0","```r
+result = tryCatch({
+  query <- \"SELECT DiscPrice FROM invoices\"
+  dbExecute(dbcon, query)
+}, error = function(e){
+  # If DiscPrice column not exist, add it.
+  alter <- \"ALTER TABLE invoices
+                  ADD COLUMN DiscPrice 
+                  NUMERIC(10, 2);\"
+  dbExecute(dbcon, alter)
+}, finally = {
+  # update values in DiscPrice
+  update <- \"UPDATE invoices
+                SET DiscPrice = 
+                CASE
+                  WHEN InvoiceId IN
+                    (SELECT InvoiceId AS invId 
+                      FROM invoice_items
+                      GROUP BY invId HAVING SUM(quantity) > 10)
+                    THEN total * 0.9
+                  ELSE total
+                END;\"
+  dbExecute(dbcon, update)
+})
+```"

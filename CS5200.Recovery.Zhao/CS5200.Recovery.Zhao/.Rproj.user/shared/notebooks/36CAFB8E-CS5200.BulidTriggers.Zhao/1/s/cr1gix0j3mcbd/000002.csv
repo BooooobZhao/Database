@@ -1,0 +1,9 @@
+"0","```sql
+INSERT INTO Author VALUES
+  (1, \"Bob\", \"bob@mail.com\", \"PT\"),
+  (2, \"Lili\", \"wow@1234.com\", \"FT\"),
+  (3, \"Galen\", \"galen@game.com\", \"Contract\"),
+  (4, \"Alex\", \"alex@toto.com\", \"Contract\"),
+  (5, \"Sara\", \"itismadeup@md.com\", \"PT\"),
+  (6, \"Ted\", \"TED@yahoo.com\", \"FT\")
+```"

@@ -1,0 +1,12 @@
+"0","```sql
+/* Q10: Which artists have composed tracks in more than three different genres? List the artists name and the number of distinct genres they have compositions in. Do not list duplicates. */
+
+SELECT artist, genreNumber FROM
+  (SELECT artists.Name AS artist, COUNT(DISTINCT genres.GenreId) AS genreNumber
+    FROM artists
+      JOIN albums USING (artistid)
+      JOIN tracks USING (AlbumId)
+      JOIN genres USING (GenreId)
+    GROUP BY artist)
+  WHERE genreNumber > 3
+```"

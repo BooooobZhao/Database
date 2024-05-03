@@ -1,0 +1,11 @@
+"0","```sql
+CREATE TRIGGER upper_bound_number_of_authors
+  BEFORE INSERT ON AuthorModule
+BEGIN
+  SELECT
+    CASE
+      WHEN (SELECT COUNT(*) FROM AuthorModule WHERE amnumber = NEW.amnumber) >= 5 THEN
+        RAISE(ABORT, 'Cannot insert: A module can only have a maximum of five authors')
+    END;
+END;
+```"

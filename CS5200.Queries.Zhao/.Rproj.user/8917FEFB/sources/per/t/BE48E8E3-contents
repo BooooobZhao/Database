@@ -1,0 +1,136 @@
+> Query a Database with SQL\
+> Author: Wang, Yinan\
+> Course: CS5200\
+> Term: 2022Fall
+
+## Environment Setup
+
+```{r}
+library(RSQLite)
+
+fpath = "./"
+dbfile = "MediaDB.db"
+
+# get db connection from given database
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+# enable foreign keys constraint
+dbExecute(dbcon, "PRAGMA foreign_keys = ON")
+
+```
+
+## Q1. What are the last name, city, and state of all customer who made at least one purchase and live in Brazil?
+
+```{sql connection=dbcon}
+select c.lastname, c.city, c.state, c.country 
+from customers c join invoices inv on c.CustomerId = inv.customerid
+where c.country = "Brazil"
+group by c.customerid;
+```
+
+## Q2. What are the titles of each albums and the number of tracks on each album?
+
+```{sql connection=dbcon}
+/* May need to click on the right black triangle to see all contents. 
+* It's because of some titles are too long.*/
+select a.Title, count(t.TrackId) as trackNumber
+from albums a join tracks t on a.AlbumId = t.AlbumId 
+group by a.Title;
+```
+
+## Q3. List the number of tracks by media type.
+
+```{sql connection=dbcon}
+/* May need to click on the right black triangle to see all contents. 
+* It's because of some titles are too long.*/
+select mt.Name as mediaType, count(t.TrackId) as trackNumber
+from media_types mt join tracks t on mt.MediaTypeId = t.MediaTypeId 
+group by mt.Name;
+```
+
+## Q4. What is the average age of the employees? Use SQL to round the result to one digit of precision
+
+When the age of each employee is counted as fractional years, the result is:
+
+```{sql connection=dbcon}
+select ROUND(AVG(cast(strftime('%Y.%m%d', 'now') - strftime('%Y.%m%d', e.BirthDate) as float)), 1) as avgAge 
+from employees e
+```
+
+## Q5. What are the total number of unique customers for each US state (e.g., MA, CT, etc.), ordered alphabetically by state, who made at least one purchase (i.e., do not consider customers who never made a purchase)?
+
+```{sql connection=dbcon}
+select c.state, count(DISTINCT c.CustomerId) as totalNumber
+from customers c join invoices inv on c.CustomerId = inv.customerid 
+where c.country = "USA" 
+group by c.state;
+```
+
+## Q6. How many customers never made a purchase, i.e., they appear in the customers table but not in the invoices table.
+
+```{sql connection=dbcon}
+select count(c.customerid) as customerNumber
+from customers c 
+where c.CustomerId not in (select inv.customerid from invoices inv);
+```
+
+## Q7. How many albums contain the substring "symphony" in the album title?
+
+```{sql connection=dbcon}
+select count(a.Title) as numbers
+from albums a 
+where a.Title like '%symphony%';
+```
+
+## Q8. What is the total "time" of all tracks per artist, i.e., add up the "Milliseconds" column in tracks? Display the artist's name and the time in hours rounded to two decimals. Only consider artists who published at least one track.
+
+```{sql connection=dbcon}
+SELECT ar.Name as artist, round((sum(t.milliseconds)/3600000.00), 2) as totalHours 
+from albums a
+join artists ar on ar.ArtistId = a.ArtistId
+join tracks t on t.AlbumId = a.AlbumId
+group by ar.Name;
+```
+
+## Q9. Which artist(s) published the least number tracks, regardless of type and format? List the artist(s) name(s). Do not list duplicates.
+
+```{sql connection=dbcon}
+/* if view exists, drop it */
+drop view if exists artistTracks;
+```
+
+```{sql connection=dbcon}
+/* create a view to store aggregated data */
+create view artistTracks AS 
+select ar.Name as artist, count(t.TrackId) as trackNumber
+from artists ar
+join albums a on ar.ArtistId = a.ArtistId
+join tracks t on a.AlbumId = t.AlbumId
+group by artist;
+```
+
+```{sql connection=dbcon}
+/* search */
+select artist, trackNumber
+from artistTracks
+where trackNumber = (select min(trackNumber) from artistTracks);
+
+```
+
+## Q10. Which artists have composed tracks in more than three different genres? List the artists name and the number of distinct genres they have compositions in. Do not list duplicates.
+
+```{sql connection=dbcon}
+select artist, genreNumber from
+  (select ar.Name as artist, count(DISTINCT g.GenreId) as genreNumber
+  from artists ar 
+  join albums a on ar.artistid = a.ArtistId
+  join tracks t on a.AlbumId = t.AlbumId
+  join genres g on t.GenreId = g.GenreId
+  group by artist)
+where genreNumber > 3;
+```
+
+## Disconnect from database
+
+```{r}
+dbDisconnect(dbcon)
+```

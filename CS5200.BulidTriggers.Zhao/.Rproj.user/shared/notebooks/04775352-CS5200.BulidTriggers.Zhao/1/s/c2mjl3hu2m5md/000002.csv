@@ -1,0 +1,6 @@
+"0","CREATE TABLE if not EXISTS LogModule(
+  MoLogId INTEGER NOT NULL,
+  MoLogTime Text NOT NULL,
+  MoLogInfo Text,
+  PRIMARY KEY(MoLogId)
+)"

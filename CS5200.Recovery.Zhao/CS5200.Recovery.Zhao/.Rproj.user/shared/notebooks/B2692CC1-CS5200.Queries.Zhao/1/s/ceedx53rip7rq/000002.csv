@@ -1,0 +1,9 @@
+"0","```sql
+/* Q3: List the number of tracks by genre, ordered from most to least, restricted to those genres for which there are at least five tracks.*/
+
+SELECT genres.Name AS genresName, COUNT(tracks.TrackId) AS trackNumber
+  FROM genres JOIN tracks USING (GenreId)
+  GROUP BY genres.GenreId
+    HAVING trackNumber > 4
+  ORDER BY trackNumber DESC
+```"

@@ -1,0 +1,16 @@
+"0","/* Q9: Which playlists are the longest (greater than 0), regardless of type and format? List the playlist name(s) and the time in two columns: one for hours and one for minutes. */
+
+SELECT Name, Hours, Mins FROM
+  (SELECT playlists.Name, SUM(tracks.milliseconds)/3600000 AS Hours, (SUM(tracks.milliseconds)%3600000)/60000 AS Mins
+    FROM playlists
+      JOIN playlist_track USING (PlaylistId)
+      JOIN tracks USING (TrackId)
+    GROUP BY playlistId
+    HAVING SUM(tracks.milliseconds) > 0
+      AND SUM(tracks.milliseconds) >= 
+        (SELECT SUM(tracks.milliseconds)
+          FROM playlists
+            JOIN playlist_track USING (PlaylistId)
+            JOIN tracks USING (TrackId)
+          GROUP BY playlistId))
+    "

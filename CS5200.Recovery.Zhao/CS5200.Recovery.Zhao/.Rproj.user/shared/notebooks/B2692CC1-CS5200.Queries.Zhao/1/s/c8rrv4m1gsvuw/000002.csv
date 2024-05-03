@@ -1,0 +1,7 @@
+"0","```sql
+/* Q6: How many customers never made a purchase, i.e., they appear in the customers table but not in the invoices table. */
+
+SELECT COUNT(Customerid) AS customerNumber
+  FROM customers
+  WHERE CustomerId NOT IN (SELECT customerid FROM invoices)
+```"
